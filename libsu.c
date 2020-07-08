@@ -18,6 +18,18 @@ void libsu_LOG_ERROR(const char* format, ... ) {
 }
 #endif
 
+bool libsu_has_root_access() {
+    libsu_processimage instance;
+    bool r = libsu_sudo(&instance, "true");
+    libsu_LOG_INFO("libsu returned: %s", r ? "true" : "false");
+    libsu_LOG_INFO("libsu instance return code: %d", instance.return_code);
+    libsu_LOG_INFO("libsu stdout: %s", instance.string_stdout);
+    libsu_LOG_INFO("libsu stderr: %s", instance.string_stderr);
+    int return_code = instance.return_code;
+    libsu_cleanup(&instance);
+    return return_code == 0;
+}
+
 void libsu_processimage_clear(libsu_processimage * instance) {
     instance->pid = 0;
     instance->stdin_fd = 0;
@@ -31,30 +43,6 @@ void libsu_processimage_clear(libsu_processimage * instance) {
     instance->return_code = 0;
     instance->exited_from_signal = false;
     instance->signal = 0;
-}
-
-void libsu_cleanup(libsu_processimage * instance) {
-    if(instance->stdin_fd) {
-        close(instance->stdin_fd);
-        instance->stdin_fd = 0;
-    }
-    if(instance->stdout_fd) {
-        close(instance->stdout_fd);
-        instance->stdout_fd = 0;
-        if (instance->stdout_should_be_freed) {
-            free(instance->string_stdout);
-            instance->string_stdout = NULL;
-        }
-    }
-    if(instance->stderr_fd) {
-        close(instance->stderr_fd);
-        instance->stderr_fd = 0;
-        if (instance->stderr_should_be_freed) {
-            free(instance->string_stderr);
-            instance->string_stderr = NULL;
-        }
-    }
-    libsu_processimage_clear(instance);
 }
 
 int libsu_read_fd(int fd, char ** outString, bool * mustBeFreed) {
@@ -99,7 +87,7 @@ int libsu_read(libsu_processimage * instance) {
     return 0;
 }
 
-int libsu_sudo(libsu_processimage * instance, const char * command) {
+bool libsu_sudo(libsu_processimage * instance, const char * command) {
     libsu_processimage_clear(instance);
     int stdin_fd[2], stdout_fd[2], stderr_fd[2];
     pid_t child;
@@ -109,17 +97,17 @@ int libsu_sudo(libsu_processimage * instance, const char * command) {
 
     if(in)
         if(pipe(stdin_fd))
-            return -1;
+            return false;
     if(out)
         if(pipe(stdout_fd))
-            return -1;
+            return false;
     if(err)
         if(pipe(stderr_fd))
-            return -1;
+            return false;
 
     switch((child = fork())) {
         case -1:
-            return -1;
+            return false;
 
         case 0:
             if(in) {
@@ -138,7 +126,7 @@ int libsu_sudo(libsu_processimage * instance, const char * command) {
                 close(stderr_fd[0]);
             }
             execlp("su", "su", "-c", command, NULL);
-            return -1;
+            return false;
 
         default:
             instance->pid = child;
@@ -164,20 +152,7 @@ int libsu_sudo(libsu_processimage * instance, const char * command) {
             const char * errnoString = strerror(errno);
             if (errno_ != 0) {
                 libsu_LOG_ERROR("waitpid returned %d, errno: %d, errno string: %s\n", r, errno_, errnoString);
-                if(instance->stdin_fd) {
-                    close(instance->stdin_fd);
-                    instance->stdin_fd = 0;
-                }
-                if(instance->stdout_fd) {
-                    close(instance->stdout_fd);
-                    instance->stdout_fd = 0;
-                }
-                if(instance->stderr_fd) {
-                    close(instance->stderr_fd);
-                    instance->stderr_fd = 0;
-                }
-                instance->pid = 0;
-                return -1;
+                return false;
             }
 
             libsu_read(instance);
@@ -197,7 +172,31 @@ int libsu_sudo(libsu_processimage * instance, const char * command) {
                     // "One of the first three macros will evaluate to a non-zero (true) value".
                 }
             }
-            return instance->return_code;
+            return true;
     }
-    return 0;
+    return true;
+}
+
+void libsu_cleanup(libsu_processimage * instance) {
+    if(instance->stdin_fd) {
+        close(instance->stdin_fd);
+        instance->stdin_fd = 0;
+    }
+    if(instance->stdout_fd) {
+        close(instance->stdout_fd);
+        instance->stdout_fd = 0;
+        if (instance->stdout_should_be_freed) {
+            free(instance->string_stdout);
+            instance->string_stdout = NULL;
+        }
+    }
+    if(instance->stderr_fd) {
+        close(instance->stderr_fd);
+        instance->stderr_fd = 0;
+        if (instance->stderr_should_be_freed) {
+            free(instance->string_stderr);
+            instance->string_stderr = NULL;
+        }
+    }
+    libsu_processimage_clear(instance);
 }

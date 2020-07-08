@@ -46,5 +46,6 @@ struct libsu_processimage {
 
 typedef struct libsu_processimage libsu_processimage;
 
-int libsu_sudo(libsu_processimage * instance, const char * command);
+bool libsu_has_root_access();
+bool libsu_sudo(libsu_processimage * instance, const char * command);
 void libsu_cleanup(libsu_processimage * instance);
