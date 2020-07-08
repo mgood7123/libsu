@@ -59,13 +59,14 @@ void libsu_cleanup(libsu_processimage * instance) {
 
 int libsu_read_fd(int fd, char ** outString, bool * mustBeFreed) {
     if (outString != NULL && mustBeFreed != NULL) {
+        size_t len = 4096 * sizeof(char);
 #ifdef __cplusplus
-        *outString = reinterpret_cast<char *>(malloc(4096 * sizeof(char)));
-        *mustBeFreed = true;
+        *outString = reinterpret_cast<char *>(malloc(len));
 #else
-        *outString = malloc(4096*sizeof(char));
-        *mustBeFreed = true;
+        *outString = malloc(len);
 #endif
+        *mustBeFreed = true;
+        memset(*outString, '\0', len);
         // steal code from socket read implementation
         int bytes = 0;
         for (;;) { // implement blocking
@@ -84,7 +85,6 @@ int libsu_read_fd(int fd, char ** outString, bool * mustBeFreed) {
                 libsu_LOG_INFO("libsu - read returned EOF (return code: 0)");
                 return 0;
             } else {
-                libsu_LOG_INFO("libsu - read returned %zu bytes of data: '%s'", ret_, *outString);
                 bytes = ret_;
             }
         }
