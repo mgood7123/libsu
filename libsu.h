@@ -8,6 +8,7 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <string.h>
+#include <assert.h>
 
 #ifndef __ANDROID__
     void libsu_LOG_INFO(const char* format, ... );

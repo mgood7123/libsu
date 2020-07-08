@@ -88,7 +88,9 @@ int libsu_read(libsu_processimage * instance) {
 }
 
 bool libsu_sudo(libsu_processimage * instance, const char * command) {
+    assert(command != NULL);
     libsu_processimage_clear(instance);
+    libsu_LOG_INFO("attempting to invoke command: %s", command);
     int stdin_fd[2], stdout_fd[2], stderr_fd[2];
     pid_t child;
     bool in = false;
