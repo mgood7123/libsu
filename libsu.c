@@ -159,27 +159,28 @@ bool libsu_sudo(libsu_processimage * instance, const char * command) {
             int r = waitpid(instance->pid, &status, 0);
             int errno_ = errno;
             const char * errnoString = strerror(errno);
-            if (errno_ != 0) {
+            // waitpid(): on success, returns the process ID of the child whose state has changed;
+            // if WNOHANG was specified and one or more child(ren) specified by pid exist,
+            // but have not yet changed state, then 0 is returned. On error, -1 is returned.
+            if (errno_ == -1) {
                 libsu_LOG_ERROR("waitpid returned %d, errno: %d, errno string: %s\n", r, errno_, errnoString);
                 return false;
             }
 
             libsu_read(instance);
 
-            if (r != -1) {
-                if (WIFEXITED(status)) {
-                    instance->return_code = WEXITSTATUS(status);
-                    instance->exited_normally = true;
-                } else if (WIFSIGNALED(status)) {
-                    instance->signal = -WTERMSIG(status);
-                    instance->exited_from_signal = true;
-                } else {
-                    // third macro is WIFSTOPPED
-                    // we should probably let the OS manage this
+            if (WIFEXITED(status)) {
+                instance->return_code = WEXITSTATUS(status);
+                instance->exited_normally = true;
+            } else if (WIFSIGNALED(status)) {
+                instance->signal = -WTERMSIG(status);
+                instance->exited_from_signal = true;
+            } else {
+                // third macro is WIFSTOPPED
+                // we should probably let the OS manage this
 
-                    // Should never happen - waitpid(2) says
-                    // "One of the first three macros will evaluate to a non-zero (true) value".
-                }
+                // Should never happen - waitpid(2) says
+                // "One of the first three macros will evaluate to a non-zero (true) value".
             }
             return true;
     }
