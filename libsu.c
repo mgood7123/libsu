@@ -88,6 +88,10 @@ int libsu_read(libsu_processimage * instance) {
 }
 
 bool libsu_sudo(libsu_processimage * instance, const char * command) {
+    return libsu_sudo(instance, false, command);
+}
+
+bool libsu_sudo(libsu_processimage * instance, bool mount_master, const char * command) {
     assert(command != NULL);
     libsu_processimage_clear(instance);
     libsu_LOG_INFO("attempting to invoke command: %s", command);
@@ -127,6 +131,7 @@ bool libsu_sudo(libsu_processimage * instance, const char * command) {
                 dup(stderr_fd[1]);
                 close(stderr_fd[0]);
             }
+            if (mount_master) execlp("su", "su", "--mount-master", "-c", command, NULL);
             execlp("su", "su", "-c", command, NULL);
             return false;
 
