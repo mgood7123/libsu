@@ -186,6 +186,13 @@ bool libsu_sudo(libsu_processimage * instance, const char * command) {
     return true;
 }
 
+void libsu_print_info(libsu_processimage * instance, bool libsu_sudo_return_code) {
+    libsu_LOG_INFO("libsu returned: %s", libsu_sudo_return_code ? "true" : "false");
+    libsu_LOG_INFO("libsu instance return code: %d", instance->return_code);
+    libsu_LOG_INFO("libsu stdout: %s", instance->string_stdout);
+    libsu_LOG_INFO("libsu stderr: %s", instance->string_stderr);
+}
+
 void libsu_cleanup(libsu_processimage * instance) {
     if(instance->stdin_fd) {
         close(instance->stdin_fd);
