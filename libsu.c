@@ -192,6 +192,14 @@ bool libsu_sudo(libsu_processimage * instance, bool mount_master, const char * c
     return true;
 }
 
+void libsu_print_info(libsu_processimage * instance, const char * command) {
+    libsu_print_info(instance, libsu_sudo(instance, command));
+}
+
+void libsu_print_info(libsu_processimage * instance, bool mount_master, const char * command) {
+    libsu_print_info(instance, libsu_sudo(instance, mount_master, command));
+}
+
 void libsu_print_info(libsu_processimage * instance, bool libsu_sudo_return_code) {
     libsu_LOG_INFO("libsu returned: %s", libsu_sudo_return_code ? "true" : "false");
     libsu_LOG_INFO("libsu instance return code: %d", instance->return_code);
