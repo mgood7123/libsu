@@ -230,3 +230,14 @@ void libsu_cleanup(libsu_processimage * instance) {
     }
     libsu_processimage_clear(instance);
 }
+
+void libsu_daemon() {
+    // process 0
+    if (fork() != 0) {
+        // process 1
+        libsu_LOG_ERROR("daemon process created, exiting main");
+        exit(0);
+    }
+    // process 1
+    libsu_LOG_ERROR("daemon process created");
+}

@@ -56,3 +56,5 @@ void libsu_print_info(libsu_processimage * instance, const char * command);
 void libsu_print_info(libsu_processimage * instance, bool mount_master, const char * command);
 void libsu_print_info(libsu_processimage * instance, bool libsu_sudo_return_code);
 void libsu_cleanup(libsu_processimage * instance);
+// exits THIS process and continue execution in child process
+void libsu_daemon();
